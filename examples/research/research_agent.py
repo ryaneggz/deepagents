@@ -2,9 +2,44 @@ import os
 from typing import Literal
 
 from tavily import TavilyClient
+from langchain.chat_models import init_chat_model
+from dotenv import load_dotenv
 
+load_dotenv()
 
 from deepagents import create_deep_agent, SubAgent
+
+import os
+import logging
+from datetime import datetime
+
+# ─── Prepare logs directory ────────────────────────────────────────────────────
+logs_dir = "logs"
+os.makedirs(logs_dir, exist_ok=True)
+
+# Generate a new filename for this run
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+log_filename = os.path.join(logs_dir, f"agent_{timestamp}.log")
+
+# ─── Configure Logging ─────────────────────────────────────────────────────────
+logger = logging.getLogger("agent_logger")
+logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
+                              "%Y-%m-%d %H:%M:%S")
+
+# File handler → writes to a fresh file each run
+file_handler = logging.FileHandler(log_filename, mode="w", encoding="utf-8")
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+# Console handler → still prints live to stdout
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 
 # Search tool to use to do research
@@ -160,4 +195,28 @@ agent = create_deep_agent(
     [internet_search],
     research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
+    model=init_chat_model(
+        # model="openai:gpt-4o-mini",
+        model="ollama:qwen3:14b",
+        temperature=0.0,
+        max_tokens=40000,
+    )
 ).with_config({"recursion_limit": 1000})
+
+
+# Prompt for user input
+user_prompt = input("Enter your prompt for the agent: ").strip()
+logger.info("User Prompt: %s", user_prompt)
+
+# Stream the agent
+result = agent.stream({"messages": [{"role": "user", "content": user_prompt}]})
+
+for chunk in result:
+    if "agent" in chunk:
+        msg = chunk["agent"]["messages"][0].content.strip()
+        logger.info("=== Agent Message ===\n%s", msg)
+    if "tools" in chunk:
+        call = chunk["tools"]["messages"][0].content.strip()
+        logger.info("+++ Tool Call +++\n%s", call)
+
+logger.info("Finished streaming. Log saved to %s", log_filename)
