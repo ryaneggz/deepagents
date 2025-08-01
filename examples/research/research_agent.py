@@ -1,9 +1,11 @@
 import os
 import logging
+import asyncio
 from typing import Literal
 from datetime import datetime
 from dotenv import load_dotenv
 
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.chat_models import init_chat_model
 from deepagents import create_deep_agent
 from tavily import TavilyClient
@@ -188,10 +190,21 @@ You have access to a few tools.
 Use this to run an internet search for a given query. You can specify the number of results, the topic, and whether raw content should be included.
 """
 
+# Add MCP Tools
+mcp_client = MultiServerMCPClient({
+  "enso-mcp": {
+    "url": "https://mcp.enso.sh/sse",
+    "headers": {
+      "x-mcp-key": "test1234"
+    },
+    "transport": "sse"
+  }
+})
+mcp_tools = asyncio.run(mcp_client.get_tools())
 
 # Create the agent
 agent = create_deep_agent(
-    [internet_search],
+    [internet_search, *mcp_tools],
     research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
     model=init_chat_model(
