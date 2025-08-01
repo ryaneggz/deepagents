@@ -204,7 +204,7 @@ mcp_tools = asyncio.run(mcp_client.get_tools())
 
 # Create the agent
 agent = create_deep_agent(
-    [internet_search, *mcp_tools],
+    [*mcp_tools],
     research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
     model=init_chat_model(
