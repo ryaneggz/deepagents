@@ -208,4 +208,4 @@ __marimo__/
 
 # LangGraph
 .langgraph_api
-**/logs/agent_*.log
+**/logs/agent*
