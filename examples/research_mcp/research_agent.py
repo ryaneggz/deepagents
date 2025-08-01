@@ -10,25 +10,6 @@ from deepagents import create_deep_agent, SubAgent
 
 load_dotenv()
 
-
-# Search tool to use to do research
-def internet_search(
-    query: str,
-    max_results: int = 5,
-    topic: Literal["general", "news", "finance"] = "general",
-    include_raw_content: bool = False,
-):
-    """Run a web search"""
-    tavily_async_client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
-    search_docs = tavily_async_client.search(
-        query,
-        max_results=max_results,
-        include_raw_content=include_raw_content,
-        topic=topic,
-    )
-    return search_docs
-
-
 sub_research_prompt = """You are a dedicated researcher. Your job is to conduct research based on the users questions.
 
 Conduct thorough research and then reply to the user with a detailed answer to their question"""
@@ -154,9 +135,11 @@ Format the report in clear markdown with proper structure and include source ref
 
 You have access to a few tools.
 
-## `internet_search`
+## `cloudflare-docs`
 
-Use this to run an internet search for a given query. You can specify the number of results, the topic, and whether raw content should be included.
+Use this to search for information about Cloudflare products.
+
+You can use this tool to search for information about Cloudflare products.
 """
 
 # Add Cloudflare Docs MCP Tool
