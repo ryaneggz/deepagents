@@ -1,17 +1,15 @@
 import os
+import logging
 from typing import Literal
-
-from tavily import TavilyClient
-from langchain.chat_models import init_chat_model
+from datetime import datetime
 from dotenv import load_dotenv
 
+from langchain.chat_models import init_chat_model
+from deepagents import create_deep_agent
+from tavily import TavilyClient
+
+
 load_dotenv()
-
-from deepagents import create_deep_agent, SubAgent
-
-import os
-import logging
-from datetime import datetime
 
 # ─── Prepare logs directory ────────────────────────────────────────────────────
 logs_dir = "logs"
@@ -190,26 +188,22 @@ You have access to a few tools.
 Use this to run an internet search for a given query. You can specify the number of results, the topic, and whether raw content should be included.
 """
 
+
 # Create the agent
 agent = create_deep_agent(
     [internet_search],
     research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
     model=init_chat_model(
-        # model="openai:gpt-4o-mini",
         model="ollama:qwen3:14b",
         temperature=0.0,
         max_tokens=40000,
     )
-).with_config({"recursion_limit": 1000})
+).with_config({"recursion_limit": 100})
 
-
-# Prompt for user input
-user_prompt = input("Enter your prompt for the agent: ").strip()
-logger.info("User Prompt: %s", user_prompt)
 
 # Stream the agent
-result = agent.stream({"messages": [{"role": "user", "content": user_prompt}]})
+result = agent.stream({"messages": [{"role": "user", "content": "Provide a summary of https://github.com/hwchase17/deepagents. Review the README, Code, and Social Media."}]})
 
 for chunk in result:
     if "agent" in chunk:
