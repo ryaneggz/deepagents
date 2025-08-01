@@ -3,3 +3,4 @@ langgraph-cli[inmem]
 tavily-python
 langchain-mcp-adapters
 langchain-openai
+python-dotenv

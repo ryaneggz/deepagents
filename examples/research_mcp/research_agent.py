@@ -1,12 +1,14 @@
 import os
 import asyncio
 from typing import Literal
-
+from dotenv import load_dotenv
 from tavily import TavilyClient
 
 from langchain.chat_models import init_chat_model
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import create_deep_agent, SubAgent
+
+load_dotenv()
 
 
 # Search tool to use to do research
