@@ -180,11 +180,11 @@ You can also specify [custom sub agents](#subagents--optional-) with their own i
 Sub agents are useful for ["context quarantine"](https://www.dbreunig.com/2025/06/26/how-to-fix-your-context.html#context-quarantine) (to help not pollute the overall context of the main agent)
 as well as custom instructions.
 
-### Adding Langchain MCP Adapter
+## Adding Langchain MCP Adapter
 
 The `deepagents` library can be ran with MCP tools. This can be extended with the [Langchain MCP Adapter](https://github.com/langchain-ai/langchain-mcp-adapters).
 
-This can be configured by running `pip install langchain-mcp-adapter` or adding it to the requirements.txt for your agent.
+(To run the example below, will need to `pip install langchain-mcp-adapter`)
 
 ```python
 import asyncio
