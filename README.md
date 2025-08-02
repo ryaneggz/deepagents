@@ -182,7 +182,7 @@ as well as custom instructions.
 
 ## Adding Langchain MCP Adapter
 
-The `deepagents` library can be ran with MCP tools. This can be extended with the [Langchain MCP Adapter](https://github.com/langchain-ai/langchain-mcp-adapters).
+The `deepagents` library can be ran with MCP tools. This can be extended with the [Langchain MCP Adapter](https://github.com/langchain-ai/langchain-mcp-adapters?tab=readme-ov-file#langchain-mcp-adapters).
 
 (To run the example below, will need to `pip install langchain-mcp-adapter`)
 
