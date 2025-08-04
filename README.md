@@ -184,7 +184,7 @@ as well as custom instructions.
 
 The `deepagents` library can be ran with MCP tools. This can be achieved by using the [Langchain MCP Adapter library](https://github.com/langchain-ai/langchain-mcp-adapters).
 
-(To run the example below, will need to `pip install langchain-mcp-adapter`)
+(To run the example below, will need to `pip install langchain-mcp-adapters`)
 
 ```python
 import asyncio
