@@ -197,11 +197,7 @@ async def main():
     mcp_tools = await mcp_client.get_tools()
 
     # Create agent
-    agent = create_deep_agent(
-        tools=mcp_tools,
-        instructions=research_instructions,
-        subagents=[critique_sub_agent, research_sub_agent],
-    ).with_config({"recursion_limit": 1000})
+    agent = create_deep_agent(tools=mcp_tools, ....)
 
     # Stream the agent
     async for chunk in agent.astream(
