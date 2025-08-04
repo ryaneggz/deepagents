@@ -204,8 +204,12 @@ async def main():
     ).with_config({"recursion_limit": 1000})
 
     # Stream the agent
-    async for chunk in agent.astream({"messages": [{"role": "user", "content": "what is langgraph?"}]})
-        print(chunk)
+    async for chunk in agent.astream(
+        {"messages": [{"role": "user", "content": "what is langgraph?"}]},
+        stream_mode="values"
+    ):
+        if "messages" in chunk:
+            chunk["messages"][-1].pretty_print()
 
 asyncio.run(main())
 ```
