@@ -180,6 +180,62 @@ You can also specify [custom sub agents](#subagents--optional-) with their own i
 Sub agents are useful for ["context quarantine"](https://www.dbreunig.com/2025/06/26/how-to-fix-your-context.html#context-quarantine) (to help not pollute the overall context of the main agent)
 as well as custom instructions.
 
+## Passing Custom Model
+
+The `create_deep_agent` function can be passed a compatible Langchain `BaseChatModel`. To run a local Ollama model via Docker:
+
+```bash
+# Run Ollama and enable all local GPUs
+docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+
+# Pull local image
+docker exec -it ollama bash
+ollama pull qwen3
+exit
+
+# View Ollama Logs
+docker logs -f ollama --tail 2000
+
+# Test initial query
+curl http://localhost:11434/api/chat -d '{
+  "model": "qwen3",
+  "messages": [
+    { "role": "user", "content": "why is the sky blue?" }
+  ]
+}'
+```
+
+Below are the modifications to the **examples/research/research_agent.py** example.
+
+(To run the example below, will need to `pip install langchain-ollama`)
+
+```python
+from deepagents import create_deep_agent
+from langchain.chat_models import init_chat_model
+
+# ...examples/research/research_agent.py agent definitions
+
+# Create agent
+agent = create_deep_agent(
+    tools=[internet_search],
+    instructions=research_instructions,
+    subagents=[critique_sub_agent, research_sub_agent],
+    model=init_chat_model(
+        model="ollama:qwen3:14b",
+        temperature=0.0,
+        max_tokens=40_000,  # 📝 See "context" column: https://ollama.com/library/qwen3
+    )
+).with_config({"recursion_limit": 1000})
+
+# Stream the agent
+for chunk in agent.stream(
+    {"messages": [{"role": "user", "content": "what is langgraph?"}]},
+    stream_mode="values"
+):
+    if "messages" in chunk:
+        chunk["messages"][-1].pretty_print()
+```
+
 ## Roadmap
 [] Allow users to customize full system prompt
 [] Code cleanliness (type hinting, docstrings, formating)
