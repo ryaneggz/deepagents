@@ -150,19 +150,6 @@ agent = create_deep_agent(
 ).with_config({"recursion_limit": 1000})
 ```
 
-#### Local Development with Ollama
-
-For cost-effective local testing, you can use models like `ollama:qwen3` from [langchain-ollama](https://github.com/langchain-ai/langchain/blob/master/libs/partners/ollama/README.md). These models are trained with tool-calling capabilities.
-
-**Setup:**
-
-```bash
-# Start Ollama with GPU support
-docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
-
-# Pull the model
-docker exec -it ollama ollama pull qwen3
-```
 
 ## Deep Agent Details
 
