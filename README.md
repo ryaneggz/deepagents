@@ -126,47 +126,43 @@ agent = create_deep_agent(
 
 ### `model` (Optional)
 
-By default, `deepagents` will use `"claude-sonnet-4-20250514"`. If you want to use a different model,
-you can pass a [LangChain model object](https://python.langchain.com/docs/integrations/chat/). 
+By default, `deepagents` uses `"claude-sonnet-4-20250514"`. You can customize this by passing any [LangChain model object](https://python.langchain.com/docs/integrations/chat/).
 
-Below are the modifications to the **examples/research/research_agent.py** example.
+#### Example: Using a Custom Model
+
+Here's how to modify the **examples/research/research_agent.py** example:
 
 ```python
 from deepagents import create_deep_agent
 from langchain.chat_models import init_chat_model
 
-# ...examples/research/research_agent.py agent definitions
+# ... existing agent definitions ...
 
-# Create agent
 agent = create_deep_agent(
     tools=[internet_search],
     instructions=research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
-    # Pass custom model
     model=init_chat_model(
-        model="ollama:qwen3:14b", # pip install langchain-ollama
+        model="ollama:qwen3:14b",  # Requires: pip install langchain-ollama
         temperature=0.0,
-        max_tokens=40_000,  # 📝 See "context" column: https://ollama.com/library/qwen3
+        max_tokens=40_000,  # 📝 See context limits: https://ollama.com/library/qwen3
     )
 ).with_config({"recursion_limit": 1000})
 ```
 
-For more cost effective local testing, models like `ollama:qwen3` are availble from [langchain-ollama](https://github.com/langchain-ai/langchain/blob/master/libs/partners/ollama/README.md) as it was trained with tool call capabilities. 
+#### Local Development with Ollama
+
+For cost-effective local testing, you can use models like `ollama:qwen3` from [langchain-ollama](https://github.com/langchain-ai/langchain/blob/master/libs/partners/ollama/README.md). These models are trained with tool-calling capabilities.
+
+**Setup:**
 
 ```bash
-# Run Ollama and enable local GPUs
+# Start Ollama with GPU support
 docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
 
-# Pull Model
-docker exec -it ollama bash
-ollama pull qwen3
+# Pull the model
+docker exec -it ollama ollama pull qwen3
 ```
-
-
-
-
-
-
 
 ## Deep Agent Details
 
