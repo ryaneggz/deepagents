@@ -149,7 +149,6 @@ agent = create_deep_agent(
     ...
 )
 
-
 ## Deep Agent Details
 
 The below components are built into `deepagents` and helps make it work for deep tasks off-the-shelf.
