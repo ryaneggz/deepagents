@@ -85,7 +85,7 @@ The agent (and any subagents) will have access to these tools.
 
 The second argument to `create_deep_agent` is `instructions`.
 This will serve as part of the prompt of the deep agent.
-Note that there is a [built in system prompt](#built-in-prompt) as well, so this is not the *entire* prompt the agent will see.
+Note that there is a [built in system prompt](src/deepagents/prompts.py) as well, so this is not the *entire* prompt the agent will see.
 
 ### `subagents` (Optional)
 
@@ -127,7 +127,35 @@ agent = create_deep_agent(
 ### `model` (Optional)
 
 By default, `deepagents` will use `"claude-sonnet-4-20250514"`. If you want to use a different model,
-you can pass a [LangChain model object](https://python.langchain.com/docs/integrations/chat/).
+you can pass a [LangChain model object](https://python.langchain.com/docs/integrations/chat/). For more cost effective local testing models like `ollama:qwen3` are availble from [langchain-ollama](https://github.com/langchain-ai/langchain/blob/master/libs/partners/ollama/README.md) due to their tool calling capabilities.
+
+```bash
+# Run Ollama and enable local GPUs
+docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+```
+
+Below are the modifications to the **examples/research/research_agent.py** example.
+
+(To run the example below, will need to `pip install langchain-ollama`)
+
+```python
+from deepagents import create_deep_agent
+from langchain.chat_models import init_chat_model
+
+# ...examples/research/research_agent.py agent definitions
+
+# Create agent
+agent = create_deep_agent(
+    tools=[internet_search],
+    instructions=research_instructions,
+    subagents=[critique_sub_agent, research_sub_agent],
+    model=init_chat_model(
+        model="ollama:qwen3:14b",
+        temperature=0.0,
+        max_tokens=40_000,  # 📝 See "context" column: https://ollama.com/library/qwen3
+    )
+).with_config({"recursion_limit": 1000})
+```
 
 ## Deep Agent Details
 
@@ -138,7 +166,7 @@ The below components are built into `deepagents` and helps make it work for deep
 `deepagents` comes with a [built-in system prompt](src/deepagents/prompts.py). This is relatively detailed prompt that is heavily based on and inspired by [attempts](https://github.com/kn1026/cc/blob/main/claudecode.md) to [replicate](https://github.com/asgeirtj/system_prompts_leaks/blob/main/Anthropic/claude-code.md)
 Claude Code's system prompt. It was made more general purpose than Claude Code's system prompt.
 This contains detailed instructions for how to use the built-in planning tool, file system tools, and sub agents.
-Note that part of this system prompt [can be customized](#promptprefix--required-)
+Note that part of this system prompt [can be customized](#instructions-required)
 
 Without this default system prompt - the agent would not be nearly as successful at going as it is.
 The importance of prompting for creating a "deep" agent cannot be understated.
@@ -175,71 +203,45 @@ result["files"]
 
 `deepagents` comes with the built-in ability to call sub agents (based on Claude Code).
 It has access to a `general-purpose` subagent at all times - this is a subagent with the same instructions as the main agent and all the tools that is has access to.
-You can also specify [custom sub agents](#subagents--optional-) with their own instructions and tools.
+You can also specify [custom sub agents](#subagents-optional) with their own instructions and tools.
 
 Sub agents are useful for ["context quarantine"](https://www.dbreunig.com/2025/06/26/how-to-fix-your-context.html#context-quarantine) (to help not pollute the overall context of the main agent)
 as well as custom instructions.
 
-## Passing Custom Model
+## MCP
 
-The `create_deep_agent` function can be passed a compatible Langchain `BaseChatModel`. To run a local Ollama model via Docker:
+The `deepagents` library can be ran with MCP tools. This can be achieved by using the [Langchain MCP Adapter library](https://github.com/langchain-ai/langchain-mcp-adapters).
 
-```bash
-# Run Ollama and enable all local GPUs
-docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
-
-# Pull local image
-docker exec -it ollama bash
-ollama pull qwen3
-exit
-
-# View Ollama Logs
-docker logs -f ollama --tail 2000
-
-# Test initial query
-curl http://localhost:11434/api/chat -d '{
-  "model": "qwen3",
-  "messages": [
-    { "role": "user", "content": "why is the sky blue?" }
-  ]
-}'
-```
-
-Below are the modifications to the **examples/research/research_agent.py** example.
-
-(To run the example below, will need to `pip install langchain-ollama`)
+(To run the example below, will need to `pip install langchain-mcp-adapters`)
 
 ```python
+import asyncio
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from deepagents import create_deep_agent
-from langchain.chat_models import init_chat_model
 
-# ...examples/research/research_agent.py agent definitions
+async def main():
+    # Collect MCP tools
+    mcp_client = MultiServerMCPClient(...)
+    mcp_tools = await mcp_client.get_tools()
 
-# Create agent
-agent = create_deep_agent(
-    tools=[internet_search],
-    instructions=research_instructions,
-    subagents=[critique_sub_agent, research_sub_agent],
-    model=init_chat_model(
-        model="ollama:qwen3:14b",
-        temperature=0.0,
-        max_tokens=40_000,  # 📝 See "context" column: https://ollama.com/library/qwen3
-    )
-).with_config({"recursion_limit": 1000})
+    # Create agent
+    agent = create_deep_agent(tools=mcp_tools, ....)
 
-# Stream the agent
-for chunk in agent.stream(
-    {"messages": [{"role": "user", "content": "what is langgraph?"}]},
-    stream_mode="values"
-):
-    if "messages" in chunk:
-        chunk["messages"][-1].pretty_print()
+    # Stream the agent
+    async for chunk in agent.astream(
+        {"messages": [{"role": "user", "content": "what is langgraph?"}]},
+        stream_mode="values"
+    ):
+        if "messages" in chunk:
+            chunk["messages"][-1].pretty_print()
+
+asyncio.run(main())
 ```
 
 ## Roadmap
-[] Allow users to customize full system prompt
-[] Code cleanliness (type hinting, docstrings, formating)
-[] Allow for more of a robust virtual filesystem
-[] Create an example of a deep coding agent built on top of this
-[] Benchmark the example of [deep research agent](examples/research/research_agent.py)
-[] Add human-in-the-loop support for tools
+- [ ] Allow users to customize full system prompt
+- [ ] Code cleanliness (type hinting, docstrings, formating)
+- [ ] Allow for more of a robust virtual filesystem
+- [ ] Create an example of a deep coding agent built on top of this
+- [ ] Benchmark the example of [deep research agent](examples/research/research_agent.py)
+- [ ] Add human-in-the-loop support for tools
