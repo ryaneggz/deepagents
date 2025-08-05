@@ -127,16 +127,9 @@ agent = create_deep_agent(
 ### `model` (Optional)
 
 By default, `deepagents` will use `"claude-sonnet-4-20250514"`. If you want to use a different model,
-you can pass a [LangChain model object](https://python.langchain.com/docs/integrations/chat/). For more cost effective local testing models like `ollama:qwen3` are availble from [langchain-ollama](https://github.com/langchain-ai/langchain/blob/master/libs/partners/ollama/README.md) due to their tool calling capabilities.
-
-```bash
-# Run Ollama and enable local GPUs
-docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
-```
+you can pass a [LangChain model object](https://python.langchain.com/docs/integrations/chat/). 
 
 Below are the modifications to the **examples/research/research_agent.py** example.
-
-(To run the example below, will need to `pip install langchain-ollama`)
 
 ```python
 from deepagents import create_deep_agent
@@ -149,13 +142,31 @@ agent = create_deep_agent(
     tools=[internet_search],
     instructions=research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
+    # Pass custom model
     model=init_chat_model(
-        model="ollama:qwen3:14b",
+        model="ollama:qwen3:14b", # pip install langchain-ollama
         temperature=0.0,
         max_tokens=40_000,  # 📝 See "context" column: https://ollama.com/library/qwen3
     )
 ).with_config({"recursion_limit": 1000})
 ```
+
+For more cost effective local testing, models like `ollama:qwen3` are availble from [langchain-ollama](https://github.com/langchain-ai/langchain/blob/master/libs/partners/ollama/README.md) as it was trained with tool call capabilities. 
+
+```bash
+# Run Ollama and enable local GPUs
+docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+
+# Pull Model
+docker exec -it ollama bash
+ollama pull qwen3
+```
+
+
+
+
+
+
 
 ## Deep Agent Details
 
