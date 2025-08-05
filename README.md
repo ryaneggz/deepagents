@@ -130,25 +130,24 @@ By default, `deepagents` uses `"claude-sonnet-4-20250514"`. You can customize th
 
 #### Example: Using a Custom Model
 
-Here's how to modify the **examples/research/research_agent.py** example:
+Here's how to use a custom model (like OpenAI's `gpt-oss` model via Ollama):
+
+(Requires `pip install langchain` and then `pip install langchain-ollama` for Ollama models)
 
 ```python
 from deepagents import create_deep_agent
-from langchain.chat_models import init_chat_model
 
 # ... existing agent definitions ...
 
+model = model=init_chat_model(
+    model="ollama:gpt-oss:20b",  
+)
 agent = create_deep_agent(
-    tools=[internet_search],
-    instructions=research_instructions,
-    subagents=[critique_sub_agent, research_sub_agent],
-    model=init_chat_model(
-        model="ollama:qwen3:14b",  # Requires: pip install langchain-ollama
-        temperature=0.0,
-        max_tokens=40_000,  # 📝 See context limits: https://ollama.com/library/qwen3
-    )
-).with_config({"recursion_limit": 1000})
-```
+    tools=tools,
+    instructions=instructions,
+    model=model,
+    ...
+)
 
 
 ## Deep Agent Details
