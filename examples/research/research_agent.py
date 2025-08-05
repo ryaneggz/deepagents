@@ -1,43 +1,10 @@
 import os
-import logging
 from typing import Literal
-from datetime import datetime
-from dotenv import load_dotenv
 
-from langchain.chat_models import init_chat_model
-from deepagents import create_deep_agent
 from tavily import TavilyClient
 
 
-load_dotenv()
-
-# ─── Prepare logs directory ────────────────────────────────────────────────────
-logs_dir = "logs"
-os.makedirs(logs_dir, exist_ok=True)
-
-# Generate a new filename for this run
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-log_filename = os.path.join(logs_dir, f"agent_{timestamp}.log")
-
-# ─── Configure Logging ─────────────────────────────────────────────────────────
-logger = logging.getLogger("agent_logger")
-logger.setLevel(logging.INFO)
-
-formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s",
-                              "%Y-%m-%d %H:%M:%S")
-
-# File handler → writes to a fresh file each run
-file_handler = logging.FileHandler(log_filename, mode="w", encoding="utf-8")
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(formatter)
-
-# Console handler → still prints live to stdout
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(formatter)
-
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+from deepagents import create_deep_agent, SubAgent
 
 
 # Search tool to use to do research
@@ -60,12 +27,15 @@ def internet_search(
 
 sub_research_prompt = """You are a dedicated researcher. Your job is to conduct research based on the users questions.
 
-Conduct thorough research and then reply to the user with a detailed answer to their question"""
+Conduct thorough research and then reply to the user with a detailed answer to their question
+
+only your FINAL answer will be passed on to the user. They will have NO knowledge of anything expect your final message, so your final report should be your final message!"""
 
 research_sub_agent = {
     "name": "research-agent",
     "description": "Used to research more in depth questions. Only give this researcher one topic at a time. Do not pass multiple sub questions to this researcher. Instead, you should break down a large topic into the necessary components, and then call multiple research agents in parallel, one for each sub question.",
     "prompt": sub_research_prompt,
+    "tools": ["internet_search"]
 }
 
 sub_critique_prompt = """You are a dedicated editor. You are being tasked to critique a report.
@@ -115,9 +85,8 @@ Here are instructions for writing the final report:
 
 <report_instructions>
 
-CRITICAL: Make sure the answer is written in the same language as the human messages!
-For example, if the user's messages are in English, then MAKE SURE you write your response in English. If the user's messages are in Chinese, then MAKE SURE you write your entire response in Chinese.
-This is critical. The user will only understand the answer if it is written in the same language as their input message.
+CRITICAL: Make sure the answer is written in the same language as the human messages! If you make a todo plan - you should note in the plan what language the report should be in so you dont forget!
+Note: the language the report should be in is the language the QUESTION is in, not the language/country that the question is ABOUT.
 
 Please create a detailed answer to the overall research brief that:
 1. Is well-organized with proper headings (# for title, ## for sections, ### for subsections)
@@ -188,29 +157,9 @@ You have access to a few tools.
 Use this to run an internet search for a given query. You can specify the number of results, the topic, and whether raw content should be included.
 """
 
-
 # Create the agent
 agent = create_deep_agent(
     [internet_search],
     research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
-    model=init_chat_model(
-        model="ollama:qwen3:14b",
-        temperature=0.0,
-        max_tokens=40000,
-    )
-).with_config({"recursion_limit": 100})
-
-
-# Stream the agent
-result = agent.stream({"messages": [{"role": "user", "content": "Provide a summary of https://github.com/hwchase17/deepagents. Review the README, Code, and Social Media."}]})
-
-for chunk in result:
-    if "agent" in chunk:
-        msg = chunk["agent"]["messages"][0].content.strip()
-        logger.info("=== Agent Message ===\n%s", msg)
-    if "tools" in chunk:
-        call = chunk["tools"]["messages"][0].content.strip()
-        logger.info("+++ Tool Call +++\n%s", call)
-
-logger.info("Finished streaming. Log saved to %s", log_filename)
+).with_config({"recursion_limit": 1000})
